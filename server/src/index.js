@@ -3,7 +3,9 @@ const express = require("express");
 const typeDefs = require("./typeDefs");
 const resolvers = require("./resolver");
 const mongoose = require("mongoose");
-const { ApolloServer, AuthenticationError } = require("apollo-server-express");
+const { ApolloServer } = require("apollo-server-express");
+const cors = require("cors");
+const port = 9000;
 
 async function startServer() {
   const app = express();
@@ -15,6 +17,9 @@ async function startServer() {
       return { auth };
     },
   });
+  
+
+  app.use(cors());
 
   await apolloServer.start();
 
@@ -28,7 +33,7 @@ async function startServer() {
     }
   });
 
-  app.listen(9000, () => console.log("app work"));
+  app.listen(port, () => console.log("app work"));
 }
 
 startServer();

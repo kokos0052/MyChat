@@ -3,6 +3,8 @@ const colors = {
     borderColor: '#2a232f',
     textColor: '#fff',
     actionColor: '#6e3aff',
+    inputBgColor: '#1c1c1c',
+    inputTxtColor: '#686868',
 }
 
 export default colors
