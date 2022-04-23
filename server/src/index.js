@@ -1,23 +1,55 @@
 require("dotenv").config();
+
 const express = require("express");
 const typeDefs = require("./typeDefs");
 const resolvers = require("./resolver");
 const mongoose = require("mongoose");
+const http = require("http");
+const socketio = require("socket.io");
+const expressJwt = require("express-jwt");
 const { ApolloServer } = require("apollo-server-express");
+const { makeExecutableSchema } = require("@graphql-tools/schema");
+const { applyMiddleware } = require("graphql-middleware");
 const cors = require("cors");
-const port = 9000;
+const permissions = require("./permissions");
+
+const app = express();
+const server = http.createServer(app);
+// const io = socketio(server);
+
+const port = 9000 || process.env.PORT;
 
 async function startServer() {
-  const app = express();
+  app.use(
+    expressJwt({
+      secret: process.env.SECRET,
+      algorithms: ["HS256"],
+      credentialsRequired: false,
+    }).unless({ path: ["/"] }),
+    function (err, req, res, next) {
+      if (err.code === "invalid_token") {
+        return next();
+      }
+      return next(err);
+    }
+  );
+
   const apolloServer = new ApolloServer({
+    schema: applyMiddleware(
+      makeExecutableSchema({
+        typeDefs,
+        resolvers,
+      }),
+      permissions
+    ),
     typeDefs,
     resolvers,
     context: ({ req }) => {
-      const auth = req.headers.authorization || "";
-      return { auth };
+      const user = req.user || null;
+
+      return { user };
     },
   });
-  
 
   app.use(cors());
 

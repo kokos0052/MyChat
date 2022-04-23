@@ -1,40 +1,44 @@
-const { User } = require("../models/User");
 const bcrypt = require("bcrypt");
 const { UserInputError } = require("apollo-server-express");
-const jwt = require("jsonwebtoken");
-const { secret } = require("../../config");
-const authenticationCheck = require("../../middleware/authMiddleware");
+const User = require("../models/User");
+const generateAccessToken = require("../config/generateAccessToken");
 
-function generateAccessToken(id) {
-  const payload = { id };
-  return jwt.sign(payload, secret, { expiresIn: "24h" });
-}
+
 
 const authConroler = {
   Query: {
     getAllUsers: async (parent, args, context, info) => {
-      authenticationCheck(context);
       return await User.find();
     },
-    getUser: async (parent, args, context, info) => {
-      // authenticationCheck(context);
-      const id = args.id;
-      console.log(await User.findById(id));
-      return await User.findById(id);
+    getUser: async (parent, args, { user }, info) => {
+      return await User.findById(user.id);
     },
   },
   Mutation: {
     createUser: async (parent, args, context, info) => {
       const { email, username, password } = args.user;
-      const friends = [];
+      if (!email || !username || !password) {
+        throw new UserInputError("Please enter all fields");
+      }
       const candidate = await User.findOne({ email });
       if (candidate) {
         throw new UserInputError("This name is already busy");
       }
-      const hashPassword = bcrypt.hashSync(password, 8);
-      const user = new User({ email, username, password: hashPassword, friends });
-      await user.save();
-      return user;
+
+      const user = await User.create({
+        username,
+        email,
+        password,
+      });
+      
+      if (!user) {
+        throw new UserInputError("Failed creat error");
+      }
+
+      return {
+        user,
+        token: generateAccessToken(user._id),
+      };
     },
     loginUser: async (parent, args, context, info) => {
       const { email, password } = args.user;

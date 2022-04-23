@@ -1,29 +1,31 @@
 const { buildSchema } = require("graphql");
 
 const typeDefs = buildSchema(`
-    type Friend {
-        friendID: ID
-        username: String
-    }
     type User {
         id: ID
         email: String
         username: String
         password: String
-        friends: [Friend]
+        picture: String
+        friends: [ID]
     }
     type Message {
         id: ID
-        text: String
-        userID: ID
+        sender: User
+        content: String
+        chat: Conversation
+        readBy: ID
     }
     type Conversation {
         id: ID
-        participants: [ID]
-        messages: [Message]
+        chatName: String
+        isGroupChat: Boolean
+        users: [User]
+        latestMessage: Message
+        groupAdmin: User
     }
     type LoginData {
-        id: ID
+        user: User
         token: String
     }
     input UserInput {
@@ -31,22 +33,21 @@ const typeDefs = buildSchema(`
         username: String
         password: String!
     }
-    input MessageInput {
-        value: String!
-        userID: ID!
-    }
     type Query {
         getAllUsers: [User]
-        getUser(id: ID): User
-        checkAuthorisation: User!
+        getUser: User
+        fetchChats: [Conversation]
+        getAllMessages(chatId: ID): [Message]
     }
     type Mutation {
-        createUser(user: UserInput): User
+        createUser(user: UserInput): LoginData
         loginUser(user: UserInput): LoginData
-        addFriend(id: ID, friendID: ID): User
-        deleteFriend(id: ID, friendID: ID): User
-        createConversation(participants: [ID]): Conversation
-        sendMessage(message: MessageInput): Message
+        accessChat(user: ID): Conversation
+        createConversation(participants: [ID] chatName: String): Conversation
+        renameConversation(newName: String chatId: ID): Conversation
+        addParticipant(chatId: ID userId: ID): Conversation
+        removeParticipant(chatId: ID userId: ID): Conversation
+        sendMessage(content: String chatId: ID): Message
     }
 `);
 
